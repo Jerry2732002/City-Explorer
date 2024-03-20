@@ -9,7 +9,7 @@ route = APIRouter()
 CLIMATE_API_KEY = "f98c3cac75094bae6edee547d15b5e50"
 
 
-    
+#Collects attractions based on the climate data and user preference    
 def get_nearby_places(latitude, longitude, radius, preferences, weather_cat):
     overpass_url = "http://overpass-api.de/api/interpreter"
     queries = []
@@ -107,10 +107,7 @@ def get_nearby_places(latitude, longitude, radius, preferences, weather_cat):
 
 
 
-
-
-    
-
+#categorizes the data into Outdoor and Indoor Climate[need further research for better results]
 def weather_category(weather_data):
     weather_main = weather_data['weather'][0]['main']
     temperature_celsius = weather_data['main']['temp'] - 273.15
@@ -128,7 +125,7 @@ def weather_category(weather_data):
     else:
         return 'Outdoors Climate'
     
-    
+#categorizes the attraction into a more readable and understandable format  
 def categorize_attraction(attraction):
     tags = attraction.get("tags", {})
     category = None
@@ -175,6 +172,8 @@ def categorize_attractions(attractions):
             categorized_attractions.append(attraction_info)
     return categorized_attractions
 
+
+#route to collect weather data
 @route.post("/weather_data")
 def getClimateData(city: str):
     URL = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={CLIMATE_API_KEY}"
@@ -205,7 +204,7 @@ def getClimateData(city: str):
         return {"error": "Failed to retrieve weather data from OpenWeatherMap."}
     
    
- 
+ #route to generate recommendations based on climate and user preference..
 @route.post("/recommendation")
 async def getRecommendation(email: str, city: str, search_radius: int):
     try:

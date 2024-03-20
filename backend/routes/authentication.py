@@ -14,26 +14,30 @@ ALGORITHM = "HS256"
 
 ### API for user login
 
-@route.post("/user_login", response_model= dict)
+
+@route.post("/user_login", response_model=dict)
 async def candidate_login(user: UserLogin) -> dict:
     try:
         login_info = await login(user.useremail)
-        stored_password_hash = login_info["password"].encode()
-        entered_password = user.password.encode()
+        stored_password_hash = login_info.get("password", "").encode()
 
+        if not stored_password_hash:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        entered_password = user.password.encode()
         if not bcrypt.checkpw(entered_password, stored_password_hash):
             raise HTTPException(status_code=401, detail="Incorrect password")
         else:
-            access_token = create_access_token(data={"email": user.email})
+            access_token = create_access_token(data={"email": user.useremail})
+            
             return {"access_token": access_token, "token_type": "bearer"}
 
-    except KeyError:
-        raise HTTPException(status_code=404, detail="Candidate not found")
-    
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
     
-def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+    
+    
+def create_access_token(data: dict, expires_delta: timedelta = None) -> dict:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -41,6 +45,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
         expire = datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    print(encoded_jwt)
     return encoded_jwt
 
 
