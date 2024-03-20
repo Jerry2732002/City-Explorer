@@ -1,13 +1,18 @@
-from fastapi import APIRouter
+from fastapi import APIRouter,HTTPException
 import requests
 from database.user import get_preferences
-import json
+import json,re
 
 
 route = APIRouter()
 
 CLIMATE_API_KEY = "f98c3cac75094bae6edee547d15b5e50"
+CITY_NAME_REGEX = r"^[a-zA-Z\s]+$"
 
+#checks format of city name
+def validate_city_name(city_name):
+    if not re.match(CITY_NAME_REGEX, city_name):
+        raise HTTPException(status_code=400, detail="Invalid city name format")
 
 #Collects attractions based on the climate data and user preference    
 def get_nearby_places(latitude, longitude, radius, preferences, weather_cat):
@@ -176,38 +181,40 @@ def categorize_attractions(attractions):
 #route to collect weather data
 @route.post("/weather_data")
 def getClimateData(city: str):
-    URL = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={CLIMATE_API_KEY}"
-    response = requests.get(URL)
-    if response.status_code == 200:
-        print(response.json())
-        weather_data = response.json()
-        category = weather_category(weather_data)
-        result = {
-                "category": category,
-                "description": weather_data['weather'][0]['description'],
-                "temperature": weather_data['main']['temp'] - 273.15,
-                "feels_like": weather_data['main']['feels_like'],
-                "temp_min": weather_data['main']['temp_min'],
-                "temp_max": weather_data['main']['temp_max'],
-                "wind_speed": weather_data['wind']['speed'],
-                "wind_direction": weather_data['wind']['deg'],
-                "cloudiness": weather_data['clouds']['all'],
-                "humidity": weather_data['main']['humidity'],
-                "sunrise": weather_data['sys']['sunrise'],
-                "sunset": weather_data['sys']['sunset'],
-                "visibility": weather_data.get('visibility'),
-}
+        validate_city_name(city)
+        URL = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={CLIMATE_API_KEY}"
+        response = requests.get(URL)
+        if response.status_code == 200:
+            print(response.json())
+            weather_data = response.json()
+            category = weather_category(weather_data)
+            result = {
+                    "category": category,
+                    "description": weather_data['weather'][0]['description'],
+                    "temperature": weather_data['main']['temp'] - 273.15,
+                    "feels_like": weather_data['main']['feels_like'],
+                    "temp_min": weather_data['main']['temp_min'],
+                    "temp_max": weather_data['main']['temp_max'],
+                    "wind_speed": weather_data['wind']['speed'],
+                    "wind_direction": weather_data['wind']['deg'],
+                    "cloudiness": weather_data['clouds']['all'],
+                    "humidity": weather_data['main']['humidity'],
+                    "sunrise": weather_data['sys']['sunrise'],
+                    "sunset": weather_data['sys']['sunset'],
+                    "visibility": weather_data.get('visibility'),
+    }
 
-        print(category)
-        return result
-    else:
-        return {"error": "Failed to retrieve weather data from OpenWeatherMap."}
+            print(category)
+            return result
+        else:
+            return {"error": "Failed to retrieve weather data from OpenWeatherMap."}
     
    
  #route to generate recommendations based on climate and user preference..
 @route.post("/recommendation")
 async def getRecommendation(email: str, city: str, search_radius: int):
     try:
+        validate_city_name(city)
         weather_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={CLIMATE_API_KEY}"
         weather_response = requests.get(weather_url)
         weather_data = weather_response.json()
