@@ -4,4 +4,4 @@ bcrypt
 requests
 motor
 jwt
-httpx
+PyJWT

@@ -9,7 +9,7 @@ route = APIRouter()
 
 TOKEN_EXPIRE_MINUTES = 60
 SALT = bcrypt.gensalt(10)
-SECRET_KEY = "g5iv0jd5hi4hkf5iu8"
+SECRET_KEY = "g5iv0jd5hi4hkfvsdvsd3r23twg5iu8"
 ALGORITHM = "HS256"
 
 ### API for user login
@@ -44,7 +44,11 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> dict:
     else:
         expire = datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    try:
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        print(encoded_jwt)
+    except Exception as e:
+        print("An error occurred during JWT encoding:", e)
     print(encoded_jwt)
     return encoded_jwt
 
